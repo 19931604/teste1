@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Geral com Ações</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; }
+    .sidebar {
+      width: 250px; background-color: #1e293b; color: white;
+      display: flex; flex-direction: column; padding: 20px;
+    }
+    .sidebar a {
+      color: white; text-decoration: none; margin-bottom: 10px;
+      display: block; padding: 10px; border-radius: 5px; cursor: pointer;
+    }
+    .sidebar a:hover { background-color: #334155; }
+    .main {
+      flex: 1; padding: 20px; background-color: #f1f5f9; overflow-y: auto;
+    }
+    .header { font-size: 22px; font-weight: bold; margin-bottom: 20px; }
+    label { display: block; margin-bottom: 10px; }
+    input, select, button {
+      width: 100%; padding: 8px; font-size: 14px;
+      margin-bottom: 10px; box-sizing: border-box;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    th { background-color: #e2e8f0; }
+    .acoes button { margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Painel</h2>
+    <a onclick="carregarPainel('documentos')">📁 Documentos</a>
+    <a onclick="carregarPainel('empresas')">🏢 Empresas</a>
+    <a onclick="carregarPainel('colaboradores')">👥 Colaboradores</a>
+  </div>
+  <div class="main" id="main-content"></div>
+  <script>
+    let painelAtual = '';
+
+    function carregarPainel(tipo) {
+      painelAtual = tipo;
+      if (tipo === 'documentos') return carregarDocumentos();
+      if (tipo === 'empresas') return carregarEmpresas();
+      if (tipo === 'colaboradores') return carregarColaboradores();
+    }
+
+    // Documentos
+    function carregarDocumentos() {
+      const docs = JSON.parse(localStorage.getItem('documentos') || '[]');
+      document.getElementById('main-content').innerHTML = `
+        <div class="header">Painel de Documentos</div>
+        <form onsubmit="event.preventDefault(); salvarDocumento();">
+          <label>Nome: <input id="docNome" required /></label>
+          <label>Tipo:
+            <select id="docTipo">
+              <option>Hollerite</option><option>Contrato</option><option>IRRF</option>
+              <option>Atestado</option><option>Certificados</option><option>Comprovantes</option>
+            </select>
+          </label>
+          <label>Arquivo: <input type="file" id="docFile" required /></label>
+          <button type="submit">Salvar</button>
+        </form>
+        <table><thead><tr><th>Nome</th><th>Tipo</th><th>Ações</th></tr></thead><tbody>
+          ${docs.map((d, i) => `
+            <tr>
+              <td>${d.nome}</td>
+              <td>${d.tipo}</td>
+              <td class="acoes">
+                <button onclick="visualizarDocumento(${i})">👁</button>
+                <button onclick="excluirDocumento(${i})">❌</button>
+                <a href="${d.arquivo}" download="${d.nome}">⬇️</a>
+              </td>
+            </tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    function salvarDocumento() {
+      const nome = document.getElementById('docNome').value;
+      const tipo = document.getElementById('docTipo').value;
+      const file = document.getElementById('docFile').files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const docs = JSON.parse(localStorage.getItem('documentos') || '[]');
+        docs.push({ nome, tipo, arquivo: e.target.result });
+        localStorage.setItem('documentos', JSON.stringify(docs));
+        carregarDocumentos();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function visualizarDocumento(i) {
+      const doc = JSON.parse(localStorage.getItem('documentos'))[i];
+      document.getElementById('main-content').innerHTML = `
+        <div class="header">Visualizar Documento</div>
+        <p><strong>Nome:</strong> ${doc.nome}</p>
+        <p><strong>Tipo:</strong> ${doc.tipo}</p>
+        <iframe src="${doc.arquivo}" width="100%" height="400px"></iframe>
+        <button onclick="carregarDocumentos()">Voltar</button>`;
+    }
+
+    function excluirDocumento(i) {
+      const docs = JSON.parse(localStorage.getItem('documentos') || '[]');
+      docs.splice(i, 1);
+      localStorage.setItem('documentos', JSON.stringify(docs));
+      carregarDocumentos();
+    }
+
+    // Empresas
+    function carregarEmpresas() {
+      const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
+      document.getElementById('main-content').innerHTML = `
+        <div class="header">Painel de Empresas</div>
+        <form onsubmit="event.preventDefault(); salvarEmpresa();">
+          <label>Nome: <input id="empNome" required /></label>
+          <label>CNPJ: <input id="empCnpj" required /></label>
+          <label>Status: <select id="empStatus"><option>Ativo</option><option>Inativo</option></select></label>
+          <label>Base: <input id="empBase" required /></label>
+          <button type="submit">Salvar</button>
+        </form>
+        <table><thead><tr><th>Nome</th><th>CNPJ</th><th>Status</th><th>Base</th><th>Ações</th></tr></thead><tbody>
+          ${empresas.map((e, i) => `
+            <tr>
+              <td>${e.nome}</td><td>${e.cnpj}</td><td>${e.status}</td><td>${e.base}</td>
+              <td class="acoes">
+                <button onclick="visualizarEmpresa(${i})">👁</button>
+                <button onclick="excluirEmpresa(${i})">❌</button>
+              </td>
+            </tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    function salvarEmpresa() {
+      const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
+      empresas.push({
+        nome: document.getElementById('empNome').value,
+        cnpj: document.getElementById('empCnpj').value,
+        status: document.getElementById('empStatus').value,
+        base: document.getElementById('empBase').value
+      });
+      localStorage.setItem('empresas', JSON.stringify(empresas));
+      carregarEmpresas();
+    }
+
+    function visualizarEmpresa(i) {
+      const e = JSON.parse(localStorage.getItem('empresas'))[i];
+      document.getElementById('main-content').innerHTML = `
+        <div class="header">Visualizar Empresa</div>
+        <p><strong>Nome:</strong> ${e.nome}</p>
+        <p><strong>CNPJ:</strong> ${e.cnpj}</p>
+        <p><strong>Status:</strong> ${e.status}</p>
+        <p><strong>Base:</strong> ${e.base}</p>
+        <button onclick="carregarEmpresas()">Voltar</button>`;
+    }
+
+    function excluirEmpresa(i) {
+      const lista = JSON.parse(localStorage.getItem('empresas') || '[]');
+      lista.splice(i, 1);
+      localStorage.setItem('empresas', JSON.stringify(lista));
+      carregarEmpresas();
+    }
+
+    // Colaboradores
+    function carregarColaboradores() {
+      const lista = JSON.parse(localStorage.getItem('colaboradores') || '[]');
+      document.getElementById('main-content').innerHTML = `
+        <div class="header">Painel de Colaboradores</div>
+        <form onsubmit="event.preventDefault(); salvarColaborador();">
+          <label>Nome: <input id="colNome" required /></label>
+          <label>CPF: <input id="colCpf" required /></label>
+          <label>Email: <input id="colEmail" required /></label>
+          <label>Empresa: <input id="colEmpresa" required /></label>
+          <label>Cargo: <input id="colCargo" required /></label>
+          <label>Status: <select id="colStatus"><option>Ativo</option><option>Inativo</option></select></label>
+          <button type="submit">Salvar</button>
+        </form>
+        <table><thead><tr><th>Nome</th><th>CPF</th><th>Email</th><th>Empresa</th><th>Cargo</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+          ${lista.map((c, i) => `
+            <tr>
+              <td>${c.nome}</td><td>${c.cpf}</td><td>${c.email}</td><td>${c.empresa}</td><td>${c.cargo}</td><td>${c.status}</td>
+              <td class="acoes">
+                <button onclick="visualizarColaborador(${i})">👁</button>
+                <button onclick="excluirColaborador(${i})">❌</button>
+              </td>
+            </tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    function salvarColaborador() {
+      const lista = JSON.parse(localStorage.getItem('colaboradores') || '[]');
+      lista.push({
+        nome: document.getElementById('colNome').value,
+        cpf: document.getElementById('colCpf').value,
+        email: document.getElementById('colEmail').value,
+        empresa: document.getElementById('colEmpresa').value,
+        cargo: document.getElementById('colCargo').value,
+        status: document.getElementById('colStatus').value
+      });
+      localStorage.setItem('colaboradores', JSON.stringify(lista));
+      carregarColaboradores();
+    }
+
+    function visualizarColaborador(i) {
+      const c = JSON.parse(localStorage.getItem('colaboradores'))[i];
+      document.getElementById('main-content').innerHTML = `
+        <div class="header">Visualizar Colaborador</div>
+        <p><strong>Nome:</strong> ${c.nome}</p>
+        <p><strong>CPF:</strong> ${c.cpf}</p>
+        <p><strong>Email:</strong> ${c.email}</p>
+        <p><strong>Empresa:</strong> ${c.empresa}</p>
+        <p><strong>Cargo:</strong> ${c.cargo}</p>
+        <p><strong>Status:</strong> ${c.status}</p>
+        <button onclick="carregarColaboradores()">Voltar</button>`;
+    }
+
+    function excluirColaborador(i) {
+      const lista = JSON.parse(localStorage.getItem('colaboradores'));
+      lista.splice(i, 1);
+      localStorage.setItem('colaboradores', JSON.stringify(lista));
+      carregarColaboradores();
+    }
+
+    // Inicializar com Documentos
+    carregarPainel('documentos');
+  </script>
+</body>
+</html>
